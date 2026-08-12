@@ -5,6 +5,14 @@ Todas las modificaciones notables del proyecto se documentan en este archivo.
 El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.0.0/),
 y el proyecto se adhiere a [Versionado Semántico](https://semver.org/lang/es/).
 
+## [0.1.11] - 2026-08-12
+
+### Corregido
+- Compilación con el backend raspicam (Raspberry Pi OS 32-bit, armv7l): el
+  warm-up GStreamer (`gstreamer_mode_` / `WarmUpGStreamer()`) se referenciaba
+  fuera del `#ifdef FISH_CAM_USE_OPENCV_BACKEND`, rompiendo el build de la
+  máquina armv7l. Ahora queda encerrado en el guard.
+
 ## [0.1.10] - 2026-08-12
 
 ### Corregido

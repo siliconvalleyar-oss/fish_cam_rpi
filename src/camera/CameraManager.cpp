@@ -145,11 +145,13 @@ bool CameraManager::Initialize() {
 
   if (ready_) {
     ApplyPropertiesLocked();
+#ifdef FISH_CAM_USE_OPENCV_BACKEND
     if (gstreamer_mode_) {
       // The first frames after starting libcamerasrc are black while the ISP
       // pipeline ramps up; discard them so the first real capture has content.
       WarmUpGStreamer();
     }
+#endif
     Logger::Info("Camera opened successfully (OV5647, 130-degree lens)");
     SetLastError("no error");
   } else {
