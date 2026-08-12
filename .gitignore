@@ -1,0 +1,36 @@
+# ---------------------------------------------------------------------------
+# fish_cam_rpi - .gitignore
+# ---------------------------------------------------------------------------
+
+# Build artifacts
+bin/*
+obj/*
+
+# Keep the empty directories in version control
+!bin/.gitkeep
+!obj/.gitkeep
+
+# Capture output and logs
+/captures/
+/logs/*
+!/logs/.gitkeep
+
+# Compiled objects and dependency files
+*.o
+*.d
+
+# Editor / IDE files
+.vscode/
+.idea/
+*.swp
+*~
+
+# Prompt artifact
+/PROMPT.md
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Third-party sources cloned by the install scripts
+/raspicam/

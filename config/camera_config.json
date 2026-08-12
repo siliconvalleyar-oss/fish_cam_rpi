@@ -1,0 +1,33 @@
+{
+  "camera": {
+    "resolution": {
+      "width": 1920,
+      "height": 1080
+    },
+    "format": "jpg",
+    "quality": 100,
+    "iso": "auto",
+    "brightness": 50,
+    "contrast": 50,
+    "saturation": 50,
+    "sharpness": 50,
+    "exposure": "auto",
+    "rotation": 0,
+    "horizontal_flip": false,
+    "vertical_flip": false,
+    "show_preview": false
+  },
+  "output": {
+    "directory": "./captures",
+    "filename_pattern": "fishcam_%Y%m%d_%H%M%S",
+    "max_size_mb": 10,
+    "overwrite": false,
+    "overlay": true
+  },
+  "logging": {
+    "level": "info",
+    "file": "./logs/camera.log",
+    "max_size_mb": 5,
+    "backup_count": 3
+  }
+}
