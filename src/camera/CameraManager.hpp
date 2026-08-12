@@ -5,9 +5,11 @@
  * Two backends are supported (selected at build time):
  *  - raspicam (default): classic MMAL-based library. Used when the legacy
  *    camera stack is available (Raspberry Pi OS Bullseye or older, /opt/vc).
- *  - OpenCV V4L2 (FISH_CAM_USE_OPENCV_BACKEND): used when raspicam is not
- *    present (Raspberry Pi OS Bookworm and later, which only ships libcamera).
- *    Enable the V4L2 compatibility layer at runtime with:
+ *  - OpenCV (FISH_CAM_USE_OPENCV_BACKEND): used when raspicam is not present
+ *    (Raspberry Pi OS Bookworm and later, which only ships libcamera). It
+ *    prefers a GStreamer `libcamerasrc` pipeline (requires the
+ *    `gstreamer1.0-libcamera` package, correct color, no LD_PRELOAD) and falls
+ *    back to the V4L2 compatibility layer:
  *    LD_PRELOAD=/usr/libexec/$(dpkg-architecture -qDEB_HOST_MULTIARCH)/libcamera/v4l2-compat.so
  *
  * @copyright MIT License - fish_cam_rpi contributors
@@ -131,6 +133,11 @@ class CameraManager {
  private:
   void SetLastError(const std::string& message);
   void ApplyPropertiesLocked();
+#ifdef FISH_CAM_USE_OPENCV_BACKEND
+  bool OpenGStreamer();
+  void WarmUpGStreamer();
+  bool gstreamer_mode_{false};
+#endif
 
   Config config_;
 #ifdef FISH_CAM_USE_OPENCV_BACKEND

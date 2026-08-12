@@ -55,6 +55,12 @@ std::string CameraManager::GetLastError() const {
 
 void CameraManager::ApplyPropertiesLocked() {
 #ifdef FISH_CAM_USE_OPENCV_BACKEND
+  // With the GStreamer backend the resolution and framerate are negotiated via
+  // the pipeline caps; the capture is already BGR and the V4L2 properties do
+  // not apply.
+  if (gstreamer_mode_) {
+    return;
+  }
   capture_.set(cv::CAP_PROP_FRAME_WIDTH, config_.width);
   capture_.set(cv::CAP_PROP_FRAME_HEIGHT, config_.height);
   capture_.set(cv::CAP_PROP_FPS, config_.frame_rate);
@@ -114,7 +120,16 @@ bool CameraManager::Initialize() {
   const int attempts = std::max(1, config_.retry_attempts);
   for (int attempt = 1; attempt <= attempts; ++attempt) {
 #ifdef FISH_CAM_USE_OPENCV_BACKEND
-    ready_ = capture_.open(0, cv::CAP_V4L2);
+    // Prefer the GStreamer libcamerasrc pipeline (real ISP processing and
+    // correct color, no LD_PRELOAD needed) and fall back to the V4L2
+    // compatibility layer when the GStreamer plugin is not installed.
+    if (OpenGStreamer()) {
+      ready_ = true;
+      gstreamer_mode_ = true;
+    } else {
+      ready_ = capture_.open(0, cv::CAP_V4L2);
+      gstreamer_mode_ = false;
+    }
 #else
     ready_ = camera_.open();
 #endif
@@ -130,12 +145,18 @@ bool CameraManager::Initialize() {
 
   if (ready_) {
     ApplyPropertiesLocked();
+    if (gstreamer_mode_) {
+      // The first frames after starting libcamerasrc are black while the ISP
+      // pipeline ramps up; discard them so the first real capture has content.
+      WarmUpGStreamer();
+    }
     Logger::Info("Camera opened successfully (OV5647, 130-degree lens)");
     SetLastError("no error");
   } else {
 #ifdef FISH_CAM_USE_OPENCV_BACKEND
-    SetLastError("camera_open_failed: no V4L2 camera found. On Bookworm use "
-                 "the libcamera v4l2 compat layer (docs/INSTALL.md).");
+    SetLastError("camera_open_failed: no GStreamer/V4L2 camera found. On "
+                 "Bookworm install gstreamer1.0-libcamera or use the libcamera "
+                 "v4l2 compat layer (docs/INSTALL.md).");
 #else
     SetLastError("camera_open_failed: OV5647 not reachable. Check the "
                  "connection and the legacy camera stack (docs/INSTALL.md).");
@@ -144,6 +165,38 @@ bool CameraManager::Initialize() {
   }
   return ready_;
 }
+
+#ifdef FISH_CAM_USE_OPENCV_BACKEND
+bool CameraManager::OpenGStreamer() {
+  std::string pipeline = "libcamerasrc ! video/x-raw,width=" +
+                         std::to_string(config_.width) +
+                         ",height=" + std::to_string(config_.height);
+  if (config_.frame_rate > 0) {
+    pipeline += ",framerate=" + std::to_string(config_.frame_rate) + "/1";
+  }
+  pipeline += " ! videoconvert ! video/x-raw,format=BGR ! appsink drop=1";
+  Logger::Debug("Trying GStreamer pipeline: " + pipeline);
+  return capture_.open(pipeline, cv::CAP_GSTREAMER);
+}
+
+void CameraManager::WarmUpGStreamer() {
+  cv::Mat frame;
+  int discarded = 0;
+  for (int i = 0; i < 60; ++i) {
+    if (!capture_.read(frame) || frame.empty()) {
+      continue;
+    }
+    if (cv::mean(frame).val[0] > 1.0) {
+      break;
+    }
+    ++discarded;
+  }
+  if (discarded > 0) {
+    Logger::Debug("GStreamer warm-up: discarded " + std::to_string(discarded) +
+                  " black frame(s)");
+  }
+}
+#endif
 
 bool CameraManager::IsReady() const {
   std::lock_guard<std::mutex> lock(mutex_);

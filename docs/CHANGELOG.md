@@ -5,6 +5,24 @@ Todas las modificaciones notables del proyecto se documentan en este archivo.
 El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.0.0/),
 y el proyecto se adhiere a [Versionado Semántico](https://semver.org/lang/es/).
 
+## [0.1.10] - 2026-08-12
+
+### Corregido
+- Backend OpenCV en Bookworm+ con cámara CSI: capturaba frames verdes
+  (crominancia nula). OpenCV 4.6 lee el buffer NV21/YUYV de la capa
+  v4l2-compat de libcamera sin crominancia (solo plano Y), mientras que la
+  cámara y libcamera producen imagen correcta (verificado con rpicam-still).
+  El backend ahora intenta primero una pipeline GStreamer `libcamerasrc` (usa
+  el ISP de libcamera directamente: color correcto, sin LD_PRELOAD) y solo cae
+  al backend V4L2 si el plugin `gstreamer1.0-libcamera` no está instalado.
+- Se descartan los primeros frames negros de arranque de libcamerasrc para que
+  la primera captura real tenga contenido.
+
+### Añadido
+- `install_dependencies.sh` instala `gstreamer1.0-libcamera` en Bookworm+ y
+  actualiza las instrucciones de ejecución (GStreamer preferido, LD_PRELOAD
+  como fallback). `docs/INSTALL.md` también se actualizó.
+
 ## [0.1.9] - 2026-08-12
 
 ### Corregido

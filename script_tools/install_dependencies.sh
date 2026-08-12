@@ -81,17 +81,18 @@ has_legacy_camera_stack() {
 }
 
 # -----------------------------------------------------------------------------
-# libcamera V4L2 compatibility layer (Bookworm+ only)
+# libcamera stack for OpenCV backend (Bookworm+ only)
 # -----------------------------------------------------------------------------
-# On Raspberry Pi OS Bookworm+ the camera is exposed through libcamera and
-# there is no native /dev/video0. OpenCV needs the V4L2 compatibility shim
-# (LD_PRELOAD) so it can open /dev/video0 like on the legacy stack.
+# On Raspberry Pi OS Bookworm+ the camera is exposed through libcamera. OpenCV
+# works best through the GStreamer libcamerasrc plugin (correct color, no
+# LD_PRELOAD); the V4L2 compatibility shim remains as a fallback.
 install_libcamera_v4l2() {
   if has_legacy_camera_stack; then
     return 0
   fi
-  log_info "Installing libcamera V4L2 compatibility layer and camera apps..."
-  sudo apt-get install -y --no-install-recommends libcamera-v4l2 libcamera-apps
+  log_info "Installing GStreamer libcamera plugin, V4L2 compat layer and apps..."
+  sudo apt-get install -y --no-install-recommends \
+    gstreamer1.0-libcamera libcamera-v4l2 libcamera-apps
 }
 
 # Returns the path to the v4l2-compat.so shim (empty if not installed).
@@ -185,7 +186,12 @@ verify() {
       log_info "  Camera state: $(vcgencmd get_camera)"
     fi
   else
-    log_info "  Camera backend: OpenCV V4L2 (libcamera)."
+    log_info "  Camera backend: OpenCV (libcamera via GStreamer, V4L2 fallback)."
+    if dpkg -s gstreamer1.0-libcamera >/dev/null 2>&1; then
+      log_info "  GStreamer libcamerasrc: installed (preferred path)."
+    else
+      log_warn "  GStreamer libcamerasrc missing; install gstreamer1.0-libcamera."
+    fi
     local compat
     compat="$(v4l2_compat_path)"
     if [[ -n "${compat}" ]]; then
@@ -213,11 +219,18 @@ log_info "Done. Reboot with: sudo reboot"
 log_info "Then check the camera with: ./script_tools/check_camera.sh"
 
 if ! has_legacy_camera_stack; then
-  compat="$(v4l2_compat_path)"
-  if [[ -n "${compat}" ]]; then
-    log_info "On Bookworm+ run the program with the libcamera V4L2 compat layer:"
-    log_info "  sudo -E env LD_PRELOAD=${compat} ./bin/fish_cam_rpi"
+  if dpkg -s gstreamer1.0-libcamera >/dev/null 2>&1; then
+    log_info "On Bookworm+ the program uses the GStreamer libcamerasrc pipeline"
+    log_info "automatically (correct color, no LD_PRELOAD needed):"
+    log_info "  ./bin/fish_cam_rpi"
   else
-    log_warn "libcamera-v4l2 is not installed; check_camera.sh will show details."
+    compat="$(v4l2_compat_path)"
+    if [[ -n "${compat}" ]]; then
+      log_info "GStreamer libcamera plugin missing; falling back to the V4L2 compat"
+      log_info "layer (run the program with):"
+      log_info "  sudo -E env LD_PRELOAD=${compat} ./bin/fish_cam_rpi"
+    else
+      log_warn "libcamera-v4l2 is not installed; check_camera.sh will show details."
+    fi
   fi
 fi

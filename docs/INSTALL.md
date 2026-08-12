@@ -114,13 +114,21 @@ Si no quieres usar los scripts:
 >
 > **Bookworm y versiones posteriores**: Raspberry Pi OS eliminó la pila legacy
 > (MMAL/`/opt/vc`), por lo que raspicam no está disponible. El Makefile lo
-> detecta automáticamente y compila con el **backend OpenCV V4L2**
-> (`-DFISH_CAM_USE_OPENCV_BACKEND`), que usa `cv::VideoCapture` sobre
-> `/dev/video0`. En ejecución, usa la capa de compatibilidad V4L2 de
-> libcamera para que el programa pueda abrir la cámara:
+> detecta automáticamente y compila con el **backend OpenCV**
+> (`-DFISH_CAM_USE_OPENCV_BACKEND`). En ejecución se intenta primero una
+> pipeline GStreamer `libcamerasrc` (usa libcamera con el ISP: color correcto,
+> sin `LD_PRELOAD`); si el plugin no está, cae al backend V4L2 sobre
+> `/dev/video0` con la capa de compatibilidad de libcamera:
 >
 > ```bash
-> sudo apt install libcamera-v4l2
+> sudo apt install gstreamer1.0-libcamera libcamera-v4l2
+> ./bin/fish_cam_rpi --capture
+> ```
+>
+> Si el plugin GStreamer no está instalado, ejecuta con la capa de
+> compatibilidad V4L2:
+>
+> ```bash
 > LD_PRELOAD=/usr/libexec/$(dpkg-architecture -qDEB_HOST_MULTIARCH)/libcamera/v4l2-compat.so ./bin/fish_cam_rpi --capture
 > ```
 >
