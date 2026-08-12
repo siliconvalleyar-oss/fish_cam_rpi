@@ -36,22 +36,6 @@ std::string RunCommand(const std::string& command) {
   return output;
 }
 
-#ifndef FISH_CAM_USE_OPENCV_BACKEND
-raspicam::RASPICAM_EXPOSURE ToRaspiExposure(const std::string& mode) {
-  if (mode == "off") return raspicam::RASPICAM_EXPOSURE_OFF;
-  if (mode == "night") return raspicam::RASPICAM_EXPOSURE_NIGHT;
-  if (mode == "backlight") return raspicam::RASPICAM_EXPOSURE_BACKLIGHT;
-  if (mode == "spotlight") return raspicam::RASPICAM_EXPOSURE_SPOTLIGHT;
-  if (mode == "sports") return raspicam::RASPICAM_EXPOSURE_SPORTS;
-  if (mode == "snow") return raspicam::RASPICAM_EXPOSURE_SNOW;
-  if (mode == "beach") return raspicam::RASPICAM_EXPOSURE_BEACH;
-  if (mode == "verylong") return raspicam::RASPICAM_EXPOSURE_VERYLONG;
-  if (mode == "antishake") return raspicam::RASPICAM_EXPOSURE_ANTISHAKE;
-  if (mode == "fireworks") return raspicam::RASPICAM_EXPOSURE_FIREWORKS;
-  return raspicam::RASPICAM_EXPOSURE_AUTO;
-}
-#endif
-
 }  // namespace
 
 CameraManager::CameraManager(const Config& config) : config_(config) {}
@@ -88,24 +72,28 @@ void CameraManager::ApplyPropertiesLocked() {
 #else
   camera_.set(cv::CAP_PROP_FRAME_WIDTH, config_.width);
   camera_.set(cv::CAP_PROP_FRAME_HEIGHT, config_.height);
-  camera_.setFrameRate(config_.frame_rate);
+  camera_.set(cv::CAP_PROP_FPS, config_.frame_rate);
+  camera_.set(cv::CAP_PROP_BRIGHTNESS, config_.brightness);
+  camera_.set(cv::CAP_PROP_CONTRAST, config_.contrast);
+  camera_.set(cv::CAP_PROP_SATURATION, config_.saturation);
   if (config_.iso > 0) {
-    camera_.setISO(config_.iso);
+    // RaspiCam_Cv maps CAP_PROP_GAIN [0,100] to ISO [0,800].
+    camera_.set(cv::CAP_PROP_GAIN, config_.iso * 100.0 / 800.0);
   }
-  camera_.setBrightness(config_.brightness);
-  camera_.setContrast(config_.contrast);
-  camera_.setSaturation(config_.saturation);
-  camera_.setSharpness(config_.sharpness);
+  // RaspiCam_Cv only supports auto exposure or a fixed shutter speed; any
+  // non-auto mode (night, sports, ...) falls back to automatic exposure.
+  camera_.set(cv::CAP_PROP_EXPOSURE, 0);
+  if (config_.exposure != "auto") {
+    Logger::Warning("raspicam backend only supports auto exposure; ignoring "
+                    "exposure mode \"" +
+                    config_.exposure + "\"");
+  }
+  // sharpness, quality, encoding and the preview window are not exposed by
+  // RaspiCam_Cv; sharpness stays at its default and the rest are handled
+  // downstream by the image processor.
   camera_.setRotation(config_.rotation);
   camera_.setHorizontalFlip(config_.horizontal_flip);
   camera_.setVerticalFlip(config_.vertical_flip);
-  camera_.setExposure(ToRaspiExposure(config_.exposure));
-  camera_.setTimeout(config_.capture_timeout_ms);
-  camera_.setEncoding(config_.encoding == Encoding::kPng
-                          ? raspicam::RASPICAM_ENCODING_PNG
-                          : raspicam::RASPICAM_ENCODING_JPEG);
-  camera_.setQuality(config_.quality);
-  camera_.setPreview(config_.show_preview);
 #endif
 }
 
@@ -128,7 +116,7 @@ bool CameraManager::Initialize() {
 #ifdef FISH_CAM_USE_OPENCV_BACKEND
     ready_ = capture_.open(0, cv::CAP_V4L2);
 #else
-    ready_ = camera_.open(cv::Size(config_.width, config_.height));
+    ready_ = camera_.open();
 #endif
     if (ready_) {
       break;
