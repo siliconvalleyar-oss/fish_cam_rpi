@@ -70,7 +70,18 @@ install_system_packages() {
 }
 
 # -----------------------------------------------------------------------------
-# raspicam library (built from source, with a Bookworm-compatible fallback)
+# Camera platform detection
+# -----------------------------------------------------------------------------
+# raspicam needs the legacy MMAL stack (/opt/vc or the MMAL headers/libs),
+# which Raspberry Pi OS removed starting with Bookworm (12+). On those
+# releases the project builds its OpenCV V4L2 backend instead (libcamera).
+has_legacy_camera_stack() {
+  [[ -f /opt/vc/lib/libmmal.so ]] || [[ -f /usr/lib/arm-linux-gnueabihf/libmmal.so ]] \
+    || [[ -f /usr/include/interface/mmal/mmal.h ]]
+}
+
+# -----------------------------------------------------------------------------
+# raspicam library (built from source, only when the legacy stack exists)
 # -----------------------------------------------------------------------------
 build_raspicam() {
   if pkg-config --exists raspicam 2>/dev/null; then
@@ -78,36 +89,38 @@ build_raspicam() {
     return 0
   fi
 
+  if ! has_legacy_camera_stack; then
+    log_warn "Legacy MMAL stack not detected (Raspberry Pi OS Bookworm+)."
+    log_warn "raspicam is not available on this release; the project will use"
+    log_warn "the OpenCV V4L2 camera backend (libcamera) automatically."
+    return 0
+  fi
+
   local workdir="${RASPICAM_DIR:-${HOME}/raspicam}"
-  local repos=(
-    "https://github.com/cedricve/raspicam.git"
-    "https://github.com/fdlk/raspicam.git"
-  )
+  log_info "Building raspicam from https://github.com/cedricve/raspicam.git ..."
+  rm -rf "${workdir}"
+  GIT_TERMINAL_PROMPT=0 git clone --depth 1 \
+      "https://github.com/cedricve/raspicam.git" "${workdir}" || {
+    log_error "Failed to clone raspicam."
+    return 1
+  }
 
-  for repo in "${repos[@]}"; do
-    log_info "Building raspicam from ${repo} ..."
-    rm -rf "${workdir}"
-    git clone --depth 1 "${repo}" "${workdir}" || continue
-
-    cmake -S "${workdir}" -B "${workdir}/build" -DCMAKE_BUILD_TYPE=Release \
-      || continue
-    cmake --build "${workdir}/build" -j"$(nproc)" || continue
-
-    if sudo cmake --install "${workdir}/build"; then
-      sudo ldconfig
-      return 0
-    fi
-  done
-
-  log_error "Failed to build raspicam from any repository."
-  log_error "See docs/INSTALL.md for manual build instructions."
-  return 1
+  cmake -S "${workdir}" -B "${workdir}/build" -DCMAKE_BUILD_TYPE=Release \
+    && cmake --build "${workdir}/build" -j"$(nproc)" \
+    && sudo cmake --install "${workdir}/build" \
+    && sudo ldconfig
 }
 
 # -----------------------------------------------------------------------------
-# Enable the legacy camera stack (required by raspicam)
+# Enable the legacy camera stack (only meaningful when the legacy stack exists)
 # -----------------------------------------------------------------------------
 enable_legacy_camera() {
+  if ! has_legacy_camera_stack; then
+    log_warn "Legacy stack not present; keeping the libcamera configuration"
+    log_warn "(camera_auto_detect) in /boot/firmware/config.txt."
+    return 0
+  fi
+
   local config_txt="/boot/config.txt"
   [[ -f /boot/firmware/config.txt ]] && config_txt="/boot/firmware/config.txt"
 
@@ -148,8 +161,14 @@ verify() {
     fi
   done
 
-  if command -v vcgencmd >/dev/null 2>&1; then
-    log_info "  Camera state: $(vcgencmd get_camera)"
+  if has_legacy_camera_stack; then
+    if command -v vcgencmd >/dev/null 2>&1; then
+      log_info "  Camera state: $(vcgencmd get_camera)"
+    fi
+  else
+    log_info "  Camera backend: OpenCV V4L2 (libcamera)."
+    log_warn "  If rpicam-hello reports 'No cameras available!', check the"
+    log_warn "  CSI ribbon cable (connector labeled CAMERA on Pi 4)."
   fi
 }
 

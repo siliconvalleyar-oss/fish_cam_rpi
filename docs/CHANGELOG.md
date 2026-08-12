@@ -5,6 +5,18 @@ Todas las modificaciones notables del proyecto se documentan en este archivo.
 El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.0.0/),
 y el proyecto se adhiere a [Versionado Semántico](https://semver.org/lang/es/).
 
+## [0.1.5] - 2026-08-11
+
+### Corregido
+- `script_tools/install_dependencies.sh`: ya no intenta compilar raspicam en
+  Raspberry Pi OS **Bookworm+** (la pila legacy MMAL no existe ahí); detecta
+  la pila (`/opt/vc` o cabeceras MMAL) y, si no está, lo omite y avisa que se
+  usará el backend OpenCV V4L2. Eliminado el fallback al fork `fdlk/raspicam`
+  (repositorio inexistente que colgaba el `git clone` pidiendo credenciales);
+  `GIT_TERMINAL_PROMPT=0` evita que cualquier clone se quede esperando input.
+- `enable_legacy_camera()` y `verify()` solo tocan la configuración legacy
+  cuando la pila existe; en Bookworm se conserva `camera_auto_detect`.
+
 ## [0.1.4] - 2026-08-11
 
 ### Corregido

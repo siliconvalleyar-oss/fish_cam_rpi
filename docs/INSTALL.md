@@ -93,20 +93,24 @@ configuración resuelta (usa `pkg-config`).
 
 Si no quieres usar los scripts:
 
-```bash
-sudo apt-get install -y build-essential cmake git pkg-config \
-  libopencv-dev libjpeg-dev libpng-dev libtiff-dev nlohmann-json3-dev \
-  libraspberrypi-dev libraspberrypi-bin libv4l-dev v4l-utils
-
-git clone --depth 1 https://github.com/cedricve/raspicam.git ~/raspicam
-cmake -S ~/raspicam -B ~/raspicam/build -DCMAKE_BUILD_TYPE=Release
-cmake --build ~/raspicam/build -j$(nproc)
-sudo cmake --install ~/raspicam/build
-sudo ldconfig
-```
-
-> En Raspberry Pi OS Bookworm (12+) el repositorio principal de raspicam puede
-> no compilar; usa el fork `https://github.com/fdlk/raspicam.git`.
+> En Raspberry Pi OS **Bullseye (11) o anterior**, compila raspicam desde su
+> repositorio oficial:
+>
+> ```bash
+> sudo apt-get install -y build-essential cmake git pkg-config \
+>   libopencv-dev libjpeg-dev libpng-dev libtiff-dev nlohmann-json3-dev \
+>   libraspberrypi-dev libraspberrypi-bin libv4l-dev v4l-utils
+>
+> git clone --depth 1 https://github.com/cedricve/raspicam.git ~/raspicam
+> cmake -S ~/raspicam -B ~/raspicam/build -DCMAKE_BUILD_TYPE=Release
+> cmake --build ~/raspicam/build -j$(nproc)
+> sudo cmake --install ~/raspicam/build
+> sudo ldconfig
+> ```
+>
+> El script `script_tools/install_dependencies.sh` detecta la pila legacy
+> automáticamente: si no está presente, **omite raspicam** y el Makefile compila
+> con el backend OpenCV V4L2.
 >
 > **Bookworm y versiones posteriores**: Raspberry Pi OS eliminó la pila legacy
 > (MMAL/`/opt/vc`), por lo que raspicam no está disponible. El Makefile lo
