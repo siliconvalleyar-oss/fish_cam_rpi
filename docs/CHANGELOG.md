@@ -5,6 +5,17 @@ Todas las modificaciones notables del proyecto se documentan en este archivo.
 El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.0.0/),
 y el proyecto se adhiere a [Versionado Semántico](https://semver.org/lang/es/).
 
+## [0.1.9] - 2026-08-12
+
+### Corregido
+- Backend raspicam (`CameraManager`): se usaba una API inexistente de
+  `RaspiCam_Cv` (`setFrameRate`, `setISO`, `setEncoding`, `open(cv::Size)`,
+  ...), lo que impedía compilar en Raspberry Pi OS 32-bit con la pila legacy.
+  Ahora se usa la API real (`set(CAP_PROP_FRAME_WIDTH/HEIGHT/FPS/...)`,
+  `setRotation`, `open()` sin argumentos). La exposición queda en automático
+  (RaspiCam_Cv no expone modo manual) y `sharpness`/`quality`/`encoding`/
+  `preview` se gestionan aguas abajo al codificar.
+
 ## [0.1.8] - 2026-08-12
 
 ### Corregido
