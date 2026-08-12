@@ -5,6 +5,18 @@ Todas las modificaciones notables del proyecto se documentan en este archivo.
 El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.0.0/),
 y el proyecto se adhiere a [Versionado Semántico](https://semver.org/lang/es/).
 
+## [0.1.6] - 2026-08-12
+
+### Añadido
+- `script_tools/check_camera.sh`: script de diagnóstico de la cámara
+  (dispositivos `/dev/video*`, estado de la pila legacy/libcamera, config.txt
+  y captura real con `bin/fish_cam_rpi`). Referenciado por
+  `install_dependencies.sh` y `src/main.cpp` pero hasta ahora inexistente.
+
+### Corregido
+- Referencias rotas a `scripts/test_camera.sh` en README, INSTALL, DEPLOYMENT
+  y USAGE; ahora apuntan al script real.
+
 ## [0.1.5] - 2026-08-11
 
 ### Corregido

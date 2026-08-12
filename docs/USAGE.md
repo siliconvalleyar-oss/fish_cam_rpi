@@ -129,7 +129,7 @@ Los valores de la línea de comandos tienen **prioridad** sobre los del JSON.
 
 | Problema | Solución |
 |----------|----------|
-| `Camera initialization failed` | Verifica el cable de la cámara, ejecuta `scripts/test_camera.sh` y la cámara legacy (INSTALL.md). |
+| `Camera initialization failed` | Verifica el cable de la cámara, ejecuta `script_tools/check_camera.sh` y la cámara legacy (INSTALL.md). |
 | `grab() failed / capture timeout` | Baja la resolución o sube la iluminación; comprueba el timeout. |
 | Imagen demasiado grande | Reduce `--width/--height` o usa JPG con calidad menor. |
 | `Low disk space` | Libera espacio; el programa avisa con < 100 MB libres. |

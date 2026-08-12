@@ -69,7 +69,7 @@ sudo reboot
 ## 4. Verificar la cámara
 
 ```bash
-./scripts/test_camera.sh
+./script_tools/check_camera.sh
 ```
 
 Deberías ver una salida similar a:

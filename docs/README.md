@@ -34,8 +34,7 @@ fish_cam_rpi/
 │   └── utils/          → Logger
 ├── include/            → cabeceras públicas (fish_cam.hpp)
 ├── config/             → camera_config.json
-├── scripts/            → setup.sh, capture_demo.sh, test_camera.sh
-├── script_tools/       → install_dependencies.sh
+├── script_tools/       → install_dependencies.sh, check_camera.sh
 ├── tests/              → pruebas unitarias y de integración
 ├── docs/               → documentación completa
 ├── logs/               → archivos de log
@@ -51,7 +50,7 @@ fish_cam_rpi/
 sudo reboot
 
 # 2. Verificar que la cámara es detectada
-./scripts/test_camera.sh
+./script_tools/check_camera.sh
 
 # 3. Compilar
 make

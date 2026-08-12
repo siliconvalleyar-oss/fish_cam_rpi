@@ -17,7 +17,7 @@ git clone <url-del-repositorio> fish_cam_rpi
 cd fish_cam_rpi
 ./script_tools/install_dependencies.sh
 sudo reboot
-./scripts/test_camera.sh       # debe reportar: RESULT: OV5647 camera OK
+./script_tools/check_camera.sh       # debe reportar: 0 failures
 make
 ```
 
@@ -152,7 +152,7 @@ sudo systemctl restart fish_cam
 
 ## 8. Salud del sistema
 
-- `scripts/test_camera.sh`: verifica la cámara.
+- `script_tools/check_camera.sh`: verifica la cámara.
 - `vcgencmd get_camera`: estado de la cámara legacy.
 - `vcgencmd measure_temp`: temperatura (mantener < 80 °C).
 - `journalctl -u fish_cam`: revisa errores de captura.
