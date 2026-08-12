@@ -5,6 +5,22 @@ Todas las modificaciones notables del proyecto se documentan en este archivo.
 El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.0.0/),
 y el proyecto se adhiere a [Versionado Semántico](https://semver.org/lang/es/).
 
+## [0.1.8] - 2026-08-12
+
+### Corregido
+- Backend OpenCV V4L2 en Bookworm+ (libcamera v4l2-compat): ya no se fuerza
+  MJPG (`CAP_PROP_FOURCC`), que la capa de compatibilidad no soporta y hacía
+  que el stream nunca arrancara colgando `read()` indefinidamente. Ahora se usa
+  NV21 (y YUYV como fallback), que sí expone la capa v4l2-compat.
+- `CameraManager::Capture()` con backend OpenCV: `VideoCapture::read()` en V4L2
+  se bloquea sin límite (`CAP_PROP_READ_TIMEOUT_MSEC` solo aplica a FFmpeg).
+  Ahora la lectura corre en un hilo auxiliar y se respeta `capture_timeout_ms`.
+
+### Añadido
+- `script_tools/kill_fish_cam.sh`: lista los procesos `fish_cam_rpi` en un menú
+  y permite matarlos uno a uno o todos (`--all`), p. ej. para liberar
+  `/dev/video0` cuando una captura se queda colgada.
+
 ## [0.1.7] - 2026-08-12
 
 ### Corregido

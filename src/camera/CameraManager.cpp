@@ -74,8 +74,17 @@ void CameraManager::ApplyPropertiesLocked() {
   capture_.set(cv::CAP_PROP_FRAME_WIDTH, config_.width);
   capture_.set(cv::CAP_PROP_FRAME_HEIGHT, config_.height);
   capture_.set(cv::CAP_PROP_FPS, config_.frame_rate);
-  capture_.set(cv::CAP_PROP_FOURCC, cv::VideoWriter::fourcc('M', 'J', 'P', 'G'));
+  // Do NOT force MJPG: the libcamera V4L2 compatibility layer on Bookworm+
+  // only exposes NV21/YUYV; requesting MJPEG makes the stream never start and
+  // VideoCapture::read() blocks forever.
+  if (!capture_.set(cv::CAP_PROP_FOURCC, cv::VideoWriter::fourcc('N', 'V', '2', '1'))) {
+    capture_.set(cv::CAP_PROP_FOURCC, cv::VideoWriter::fourcc('Y', 'U', 'Y', 'V'));
+  }
+#if defined(CV_VERSION_MAJOR) && (CV_VERSION_MAJOR > 4 || (CV_VERSION_MAJOR == 4 && CV_VERSION_MINOR >= 6))
+  // NOTE: only honored by the FFmpeg backend; V4L2 read() is covered by the
+  // timeout in Capture().
   capture_.set(cv::CAP_PROP_READ_TIMEOUT_MSEC, config_.capture_timeout_ms);
+#endif
 #else
   camera_.set(cv::CAP_PROP_FRAME_WIDTH, config_.width);
   camera_.set(cv::CAP_PROP_FRAME_HEIGHT, config_.height);
@@ -161,12 +170,30 @@ bool CameraManager::Capture(cv::Mat& frame) {
     return false;
   }
 #ifdef FISH_CAM_USE_OPENCV_BACKEND
-  if (!capture_.read(frame)) {
+  // VideoCapture::read() on the V4L2 backend blocks indefinitely when the
+  // stream stalls (CAP_PROP_READ_TIMEOUT_MSEC only affects FFmpeg). Run it on
+  // a detached worker so we can enforce capture_timeout_ms ourselves.
+  cv::Mat read_frame;
+  std::atomic<bool> read_done{false};
+  std::thread reader([this, &read_frame, &read_done]() {
+    if (capture_.read(read_frame)) {
+      read_done = true;
+    }
+  });
+  reader.detach();
+  const auto deadline =
+      std::chrono::steady_clock::now() +
+      std::chrono::milliseconds(config_.capture_timeout_ms);
+  while (!read_done && std::chrono::steady_clock::now() < deadline) {
+    std::this_thread::sleep_for(std::chrono::milliseconds(50));
+  }
+  if (!read_done) {
     SetLastError("capture_timeout: no frame within " +
                  std::to_string(config_.capture_timeout_ms) + " ms");
     Logger::Error(GetLastError());
     return false;
   }
+  frame = read_frame;
 #else
   if (!camera_.grab()) {
     SetLastError("capture_timeout: no frame within " +
