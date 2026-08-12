@@ -1,6 +1,6 @@
 /**
  * @file CameraManager.cpp
- * @brief Implementation of the camera manager using raspicam.
+ * @brief Implementation of the camera manager with a dual backend.
  */
 
 #include "camera/CameraManager.hpp"
@@ -36,6 +36,7 @@ std::string RunCommand(const std::string& command) {
   return output;
 }
 
+#ifndef FISH_CAM_USE_OPENCV_BACKEND
 raspicam::RASPICAM_EXPOSURE ToRaspiExposure(const std::string& mode) {
   if (mode == "off") return raspicam::RASPICAM_EXPOSURE_OFF;
   if (mode == "night") return raspicam::RASPICAM_EXPOSURE_NIGHT;
@@ -49,6 +50,7 @@ raspicam::RASPICAM_EXPOSURE ToRaspiExposure(const std::string& mode) {
   if (mode == "fireworks") return raspicam::RASPICAM_EXPOSURE_FIREWORKS;
   return raspicam::RASPICAM_EXPOSURE_AUTO;
 }
+#endif
 
 }  // namespace
 
@@ -68,6 +70,13 @@ std::string CameraManager::GetLastError() const {
 }
 
 void CameraManager::ApplyPropertiesLocked() {
+#ifdef FISH_CAM_USE_OPENCV_BACKEND
+  capture_.set(cv::CAP_PROP_FRAME_WIDTH, config_.width);
+  capture_.set(cv::CAP_PROP_FRAME_HEIGHT, config_.height);
+  capture_.set(cv::CAP_PROP_FPS, config_.frame_rate);
+  capture_.set(cv::CAP_PROP_FOURCC, cv::VideoWriter::fourcc('M', 'J', 'P', 'G'));
+  capture_.set(cv::CAP_PROP_READ_TIMEOUT_MSEC, config_.capture_timeout_ms);
+#else
   camera_.set(cv::CAP_PROP_FRAME_WIDTH, config_.width);
   camera_.set(cv::CAP_PROP_FRAME_HEIGHT, config_.height);
   camera_.setFrameRate(config_.frame_rate);
@@ -88,6 +97,7 @@ void CameraManager::ApplyPropertiesLocked() {
                           : raspicam::RASPICAM_ENCODING_JPEG);
   camera_.setQuality(config_.quality);
   camera_.setPreview(config_.show_preview);
+#endif
 }
 
 bool CameraManager::Initialize() {
@@ -106,7 +116,11 @@ bool CameraManager::Initialize() {
 
   const int attempts = std::max(1, config_.retry_attempts);
   for (int attempt = 1; attempt <= attempts; ++attempt) {
+#ifdef FISH_CAM_USE_OPENCV_BACKEND
+    ready_ = capture_.open(0, cv::CAP_V4L2);
+#else
     ready_ = camera_.open(cv::Size(config_.width, config_.height));
+#endif
     if (ready_) {
       break;
     }
@@ -118,11 +132,17 @@ bool CameraManager::Initialize() {
   }
 
   if (ready_) {
+    ApplyPropertiesLocked();
     Logger::Info("Camera opened successfully (OV5647, 130-degree lens)");
     SetLastError("no error");
   } else {
+#ifdef FISH_CAM_USE_OPENCV_BACKEND
+    SetLastError("camera_open_failed: no V4L2 camera found. On Bookworm use "
+                 "the libcamera v4l2 compat layer (docs/INSTALL.md).");
+#else
     SetLastError("camera_open_failed: OV5647 not reachable. Check the "
                  "connection and the legacy camera stack (docs/INSTALL.md).");
+#endif
     Logger::Error(GetLastError());
   }
   return ready_;
@@ -140,6 +160,14 @@ bool CameraManager::Capture(cv::Mat& frame) {
     Logger::Warning(GetLastError());
     return false;
   }
+#ifdef FISH_CAM_USE_OPENCV_BACKEND
+  if (!capture_.read(frame)) {
+    SetLastError("capture_timeout: no frame within " +
+                 std::to_string(config_.capture_timeout_ms) + " ms");
+    Logger::Error(GetLastError());
+    return false;
+  }
+#else
   if (!camera_.grab()) {
     SetLastError("capture_timeout: no frame within " +
                  std::to_string(config_.capture_timeout_ms) + " ms");
@@ -147,6 +175,7 @@ bool CameraManager::Capture(cv::Mat& frame) {
     return false;
   }
   camera_.retrieve(frame);
+#endif
   if (frame.empty()) {
     SetLastError("capture_failed: retrieve() returned an empty frame");
     Logger::Error(GetLastError());
@@ -198,7 +227,11 @@ int CameraManager::CaptureBurst(int count, std::vector<cv::Mat>& frames) {
 void CameraManager::Shutdown() {
   std::lock_guard<std::mutex> lock(mutex_);
   if (ready_ || initialized_) {
+#ifdef FISH_CAM_USE_OPENCV_BACKEND
+    capture_.release();
+#else
     camera_.release();
+#endif
     ready_ = false;
     initialized_ = false;
     Logger::Info("Camera released");

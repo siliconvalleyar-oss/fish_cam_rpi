@@ -30,15 +30,27 @@ OPENCV_FLAGS := $(shell $(PKG_CONFIG) --cflags opencv4 2>/dev/null || \
                         $(PKG_CONFIG) --cflags opencv 2>/dev/null)
 OPENCV_LIBS  := $(shell $(PKG_CONFIG) --libs opencv4 2>/dev/null || \
                         $(PKG_CONFIG) --libs opencv 2>/dev/null)
-RASPICAM_LIBS := $(shell $(PKG_CONFIG) --libs raspicam raspicam_cv 2>/dev/null)
+RASPICAM_CFLAGS := $(shell $(PKG_CONFIG) --cflags raspicam 2>/dev/null)
+RASPICAM_LIBS  := $(shell $(PKG_CONFIG) --libs raspicam raspicam_cv 2>/dev/null)
 
 ifeq ($(strip $(OPENCV_FLAGS)),)
 OPENCV_FLAGS := -I/usr/include/opencv4
-OPENCV_LIBS  := -lopencv_core -lopencv_imgproc -lopencv_imgcodecs
+OPENCV_LIBS  := -lopencv_core -lopencv_imgproc -lopencv_imgcodecs -lopencv_videoio
 endif
 
+# If raspicam is not announced by pkg-config, look for it in /usr/local (a
+# source build installed with `cmake --install` but outside pkg-config's path).
 ifeq ($(strip $(RASPICAM_LIBS)),)
-RASPICAM_LIBS := -lraspicam -lraspicam_cv
+RASPICAM_LIBS := $(shell ls /usr/local/lib/libraspicam_cv.so 2>/dev/null)
+endif
+
+# When raspicam is unavailable (e.g. Raspberry Pi OS Bookworm, which removed
+# the legacy MMAL stack), build the OpenCV V4L2 camera backend instead.
+ifeq ($(strip $(RASPICAM_LIBS)),)
+$(info [!] raspicam not found - building with the OpenCV V4L2 camera backend)
+CXXFLAGS += -DFISH_CAM_USE_OPENCV_BACKEND
+else
+CXXFLAGS += $(RASPICAM_CFLAGS)
 endif
 
 CXXFLAGS += $(INCLUDES) $(OPENCV_FLAGS) -DFISH_CAM_VERSION=\"$(VERSION)\"

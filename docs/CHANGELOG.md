@@ -5,6 +5,20 @@ Todas las modificaciones notables del proyecto se documentan en este archivo.
 El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.0.0/),
 y el proyecto se adhiere a [Versionado Semántico](https://semver.org/lang/es/).
 
+## [0.1.3] - 2026-08-11
+
+### Añadido
+- **Backend de cámara OpenCV V4L2** (`FISH_CAM_USE_OPENCV_BACKEND`): en
+  Raspberry Pi OS Bookworm+ raspicam ya no está disponible (la pila legacy
+  MMAL fue eliminada); el Makefile lo detecta y compila `CameraManager` sobre
+  `cv::VideoCapture`/`/dev/video0`. El backend raspicam sigue siendo el
+  predeterminado cuando está presente.
+
+### Corregido
+- `Makefile`: ya no fuerza `-lraspicam` cuando la librería no existe; detecta
+  raspicam vía `pkg-config` o `/usr/local/lib` y añade `-lopencv_videoio` al
+  fallback de OpenCV.
+
 ## [0.1.2] - 2026-08-11
 
 ### Corregido

@@ -1,6 +1,14 @@
 /**
  * @file CameraManager.hpp
- * @brief Wraps the OV5647 camera through the raspicam library.
+ * @brief Wraps the OV5647 camera through a configurable backend.
+ *
+ * Two backends are supported (selected at build time):
+ *  - raspicam (default): classic MMAL-based library. Used when the legacy
+ *    camera stack is available (Raspberry Pi OS Bullseye or older, /opt/vc).
+ *  - OpenCV V4L2 (FISH_CAM_USE_OPENCV_BACKEND): used when raspicam is not
+ *    present (Raspberry Pi OS Bookworm and later, which only ships libcamera).
+ *    Enable the V4L2 compatibility layer at runtime with:
+ *    LD_PRELOAD=/usr/lib/arm-linux-gnueabihf/libcamera/v4l2-compat.so
  *
  * @copyright MIT License - fish_cam_rpi contributors
  */
@@ -16,7 +24,11 @@
 #include <string>
 #include <vector>
 
+#ifndef FISH_CAM_USE_OPENCV_BACKEND
 #include <raspicam/raspicam_cv.h>
+#else
+#include <opencv2/videoio.hpp>
+#endif
 
 namespace fishcam {
 
@@ -121,7 +133,11 @@ class CameraManager {
   void ApplyPropertiesLocked();
 
   Config config_;
+#ifdef FISH_CAM_USE_OPENCV_BACKEND
+  cv::VideoCapture capture_;
+#else
   raspicam::RaspiCam_Cv camera_;
+#endif
   mutable std::mutex mutex_;
   std::string last_error_;
   bool ready_{false};
