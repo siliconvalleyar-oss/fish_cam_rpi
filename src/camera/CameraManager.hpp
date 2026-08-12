@@ -8,7 +8,7 @@
  *  - OpenCV V4L2 (FISH_CAM_USE_OPENCV_BACKEND): used when raspicam is not
  *    present (Raspberry Pi OS Bookworm and later, which only ships libcamera).
  *    Enable the V4L2 compatibility layer at runtime with:
- *    LD_PRELOAD=/usr/lib/arm-linux-gnueabihf/libcamera/v4l2-compat.so
+ *    LD_PRELOAD=/usr/libexec/$(dpkg-architecture -qDEB_HOST_MULTIARCH)/libcamera/v4l2-compat.so
  *
  * @copyright MIT License - fish_cam_rpi contributors
  */

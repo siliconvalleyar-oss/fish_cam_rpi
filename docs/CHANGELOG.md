@@ -5,6 +5,17 @@ Todas las modificaciones notables del proyecto se documentan en este archivo.
 El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.0.0/),
 y el proyecto se adhiere a [Versionado Semántico](https://semver.org/lang/es/).
 
+## [0.1.4] - 2026-08-11
+
+### Corregido
+- Ruta de la capa de compatibilidad V4L2 de libcamera en `INSTALL.md` y en el
+  comentario de `CameraManager.hpp`: está en
+  `/usr/libexec/<multiarch>/libcamera/v4l2-compat.so` (paquete `libcamera-v4l2`).
+
+### Añadido
+- Sección de solución de problemas en `docs/INSTALL.md`: "No cameras
+  available!" y cómo forzar `dtoverlay=ov5647` (módulos de terceros).
+
 ## [0.1.3] - 2026-08-11
 
 ### Añadido

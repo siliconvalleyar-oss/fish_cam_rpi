@@ -116,8 +116,16 @@ sudo ldconfig
 > libcamera para que el programa pueda abrir la cámara:
 >
 > ```bash
-> LD_PRELOAD=/usr/lib/arm-linux-gnueabihf/libcamera/v4l2-compat.so ./bin/fish_cam_rpi --capture
+> sudo apt install libcamera-v4l2
+> LD_PRELOAD=/usr/libexec/$(dpkg-architecture -qDEB_HOST_MULTIARCH)/libcamera/v4l2-compat.so ./bin/fish_cam_rpi --capture
 > ```
+>
+> **Solución de problemas**: si `rpicam-hello --list-cameras` dice
+> "No cameras available!", libcamera no detecta el sensor. Comprueba que el
+> cable plano de la cámara esté bien conectado en el puerto CSI y, si el
+> módulo es de terceros, fuerza el overlay explícito en `/boot/firmware/config.txt`
+> con `camera_auto_detect=0` + `dtoverlay=ov5647` (evita tener ambos a la vez,
+> duplican la carga del sensor). Verifica con `dmesg | grep -i camera`.
 
 ## 6. Ejecutar las pruebas
 
