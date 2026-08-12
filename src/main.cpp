@@ -33,6 +33,8 @@
 #include "timestamp/TimestampManager.hpp"
 #include "utils/Logger.hpp"
 
+using namespace fishcam;
+
 namespace {
 
 volatile std::sig_atomic_t g_stop_requested = 0;

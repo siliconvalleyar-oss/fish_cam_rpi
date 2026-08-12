@@ -5,6 +5,16 @@ Todas las modificaciones notables del proyecto se documentan en este archivo.
 El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.0.0/),
 y el proyecto se adhiere a [Versionado Semántico](https://semver.org/lang/es/).
 
+## [0.1.2] - 2026-08-11
+
+### Corregido
+- `src/main.cpp`: faltaba `using namespace fishcam;`, lo que rompía la
+  compilación (errores "`AppSettings` is of non-class type 'const int'",
+  "`Logger` has not been declared", etc.).
+- `CameraSettings`: añadido el campo `frame_rate` (lo esperaban la CLI `--fps`
+  y `camera_config.json`, pero no existía en la configuración). Ahora se carga
+  y guarda correctamente.
+
 ## [0.1.1] - 2026-08-11
 
 ### Añadido

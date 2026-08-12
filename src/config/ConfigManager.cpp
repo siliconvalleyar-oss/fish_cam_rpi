@@ -23,6 +23,7 @@ void ApplyCameraSection(AppSettings& settings, const nlohmann::json& root) {
     settings.camera.width = camera["resolution"].value("width", settings.camera.width);
     settings.camera.height = camera["resolution"].value("height", settings.camera.height);
   }
+  settings.camera.frame_rate = camera.value("frame_rate", settings.camera.frame_rate);
   settings.camera.format = camera.value("format", settings.camera.format);
   settings.camera.quality = camera.value("quality", settings.camera.quality);
   settings.camera.iso = camera.value("iso", settings.camera.iso);
@@ -97,6 +98,7 @@ bool ConfigManager::Save(const std::string& path, const AppSettings& settings) {
   nlohmann::json root;
   root["camera"]["resolution"]["width"] = settings.camera.width;
   root["camera"]["resolution"]["height"] = settings.camera.height;
+  root["camera"]["frame_rate"] = settings.camera.frame_rate;
   root["camera"]["format"] = settings.camera.format;
   root["camera"]["quality"] = settings.camera.quality;
   root["camera"]["iso"] = settings.camera.iso;

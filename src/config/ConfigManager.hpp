@@ -16,6 +16,7 @@ namespace fishcam {
 struct CameraSettings {
   int width = 1920;
   int height = 1080;
+  int frame_rate = 30;          ///< frames per second
   std::string format = "jpg";   ///< "jpg" | "png"
   int quality = 100;            ///< 1..100
   std::string iso = "auto";     ///< "auto" or a numeric ISO value
