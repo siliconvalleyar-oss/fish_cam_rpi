@@ -5,6 +5,15 @@ Todas las modificaciones notables del proyecto se documentan en este archivo.
 El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.0.0/),
 y el proyecto se adhiere a [Versionado Semántico](https://semver.org/lang/es/).
 
+## [0.1.1] - 2026-08-11
+
+### Añadido
+- Política de versionado: cada release incrementa el patch en **0.0.1**
+  (`v0.1.0 → v0.1.1 → ...`) y cada push/release lleva su tag `vX.Y.Z`.
+- `scripts/release.sh`: automatiza el bump de versión, el commit y el tag.
+- Archivo `VERSION` y compilación con `-DFISH_CAM_VERSION` (Makefile).
+- Objetivo `make version`.
+
 ## [0.1.0] - 2026-08-11
 
 ### Añadido
@@ -35,3 +44,9 @@ y el proyecto se adhiere a [Versionado Semántico](https://semver.org/lang/es/).
 - Interfaz HTTP/API REST para disparar capturas remotamente.
 - Pila de imágenes (ring buffer) para el modo ráfaga.
 - Archivos de despliegue systemd de ejemplo (ver DEPLOYMENT.md).
+
+## Política de versionado
+
+Cada release incrementa la versión **patch en 0.0.1** (`v0.1.0 → v0.1.1 → ...`)
+y lleva su tag anotado `vX.Y.Z`. La publicación se automatiza con
+`scripts/release.sh` (ver docs/CONTRIBUTING.md).

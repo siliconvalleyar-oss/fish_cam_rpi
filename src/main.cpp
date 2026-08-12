@@ -390,7 +390,7 @@ int main(int argc, char* argv[]) {
       settings.logging.file, Logger::ParseLevel(settings.logging.level),
       Logger::Output::kBoth);
 
-  Logger::Info("fish_cam_rpi 0.1.0 (build date " __DATE__ ")");
+  Logger::Info("fish_cam_rpi " FISH_CAM_VERSION " (build date " __DATE__ ")");
   Logger::Info("Config: " + std::to_string(settings.camera.width) + "x" +
                std::to_string(settings.camera.height) + " @" +
                std::to_string(settings.camera.frame_rate) + " fps, " +

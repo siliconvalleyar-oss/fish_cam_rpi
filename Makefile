@@ -15,6 +15,7 @@
 
 TARGET      := bin/fish_cam_rpi
 PROJECT     := fish_cam_rpi
+VERSION     := $(shell cat VERSION 2>/dev/null || echo 0.1.0)
 
 CXX         ?= g++
 CXXSTD      := -std=c++17
@@ -40,7 +41,7 @@ ifeq ($(strip $(RASPICAM_LIBS)),)
 RASPICAM_LIBS := -lraspicam -lraspicam_cv
 endif
 
-CXXFLAGS += $(INCLUDES) $(OPENCV_FLAGS)
+CXXFLAGS += $(INCLUDES) $(OPENCV_FLAGS) -DFISH_CAM_VERSION=\"$(VERSION)\"
 LDFLAGS  := -pthread
 LIBS     := $(RASPICAM_LIBS) $(OPENCV_LIBS)
 
@@ -60,7 +61,7 @@ INCLUDEDIR  := $(PREFIX)/include/fish_cam
 
 .DEFAULT_GOAL := all
 
-.PHONY: all run demo test install uninstall info clean distclean
+.PHONY: all run demo test install uninstall info version clean distclean
 
 # =============================================================================
 # Build
@@ -126,12 +127,16 @@ uninstall:
 
 info:
 	@echo "CXX       = $(CXX)"
+	@echo "VERSION   = $(VERSION)"
 	@echo "CXXFLAGS  = $(CXXFLAGS)"
 	@echo "LDFLAGS   = $(LDFLAGS)"
 	@echo "LIBS      = $(LIBS)"
 	@echo "SRCS      = $(SRCS)"
 	@echo "OBJS      = $(OBJS)"
 	@echo "TESTS     = $(UNIT_TEST_BINS)"
+
+version:
+	@echo "fish_cam_rpi $(VERSION)"
 
 clean:
 	rm -rf obj bin

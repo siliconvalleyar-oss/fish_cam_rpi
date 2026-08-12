@@ -74,3 +74,31 @@ Incluye en el *issue*:
 
 Al contribuir aceptas que tu código se distribuya bajo la licencia MIT del
 proyecto (ver `docs/LICENSE.md`).
+
+## Release y versionado
+
+- Cada release incrementa la versión **patch en 0.0.1**:
+  `v0.1.0 → v0.1.1 → v0.1.2 → ...`.
+- Cada release/push debe llevar su **tag anotado** `vX.Y.Z` apuntando al
+  commit de la release.
+- La versión actual se guarda en `VERSION` y se inyecta en el binario vía
+  `-DFISH_CAM_VERSION` (ver Makefile).
+- Para publicar usa el automatismo:
+
+  ```bash
+  ./scripts/release.sh            # prepara commit + tag local
+  ./scripts/release.sh --push     # además publica main + tag en el remoto
+  ```
+
+  Completa la sección `### Añadido` que el script crea en
+  `docs/CHANGELOG.md` antes de publicar.
+- Ejemplo de secuencia completa:
+
+  ```bash
+  ./scripts/release.sh            # 0.1.0 -> 0.1.1, tag v0.1.1
+  # edita docs/CHANGELOG.md con los cambios de la release
+  git commit --amend --no-edit -- docs/CHANGELOG.md
+  git tag -f -a v0.1.1 -m "fish_cam_rpi 0.1.1"
+  git push -f origin v0.1.1
+  git push origin main
+  ```
