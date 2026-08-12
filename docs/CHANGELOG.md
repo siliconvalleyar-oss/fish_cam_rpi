@@ -5,6 +5,17 @@ Todas las modificaciones notables del proyecto se documentan en este archivo.
 El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.0.0/),
 y el proyecto se adhiere a [Versionado Semántico](https://semver.org/lang/es/).
 
+## [0.1.7] - 2026-08-12
+
+### Corregido
+- `script_tools/install_dependencies.sh`: en Raspberry Pi OS **Bookworm+**
+  instala `libcamera-v4l2` y `libcamera-apps` (la pila de cámara moderna). Al
+  final avisa del comando de ejecución correcto con la capa de compatibilidad
+  V4L2 (`LD_PRELOAD=.../v4l2-compat.so`), sin la cual OpenCV no puede abrir
+  `/dev/video0` (que en Bookworm no existe de forma nativa).
+- `script_tools/check_camera.sh`: detecta nodos `/dev/video*` presentes pero
+  sin `/dev/video0`, avisando de que hace falta la capa v4l2-compat.
+
 ## [0.1.6] - 2026-08-12
 
 ### Añadido

@@ -56,6 +56,14 @@ echo "1. Device nodes"
 mapfile -t DEVICES < <(ls /dev/video* 2>/dev/null)
 if [[ "${#DEVICES[@]}" -gt 0 ]]; then
   ok "found: ${DEVICES[*]}"
+  if [[ -e /dev/video0 ]]; then
+    ok "found: /dev/video0"
+  elif has_legacy_stack; then
+    warn "no /dev/video0 (is the bcm2835-v4l2 driver loaded?)"
+  else
+    warn "no /dev/video0 yet; on Bookworm+ it appears when running with the"
+    warn "libcamera v4l2-compat layer (LD_PRELOAD), see docs/INSTALL.md"
+  fi
   if command -v v4l2-ctl >/dev/null 2>&1; then
     for dev in "${DEVICES[@]}"; do
       echo "     $(v4l2-ctl -d "${dev}" --info 2>/dev/null | head -3 | tr '\n' ' ')"

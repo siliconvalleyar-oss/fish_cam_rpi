@@ -81,6 +81,25 @@ has_legacy_camera_stack() {
 }
 
 # -----------------------------------------------------------------------------
+# libcamera V4L2 compatibility layer (Bookworm+ only)
+# -----------------------------------------------------------------------------
+# On Raspberry Pi OS Bookworm+ the camera is exposed through libcamera and
+# there is no native /dev/video0. OpenCV needs the V4L2 compatibility shim
+# (LD_PRELOAD) so it can open /dev/video0 like on the legacy stack.
+install_libcamera_v4l2() {
+  if has_legacy_camera_stack; then
+    return 0
+  fi
+  log_info "Installing libcamera V4L2 compatibility layer and camera apps..."
+  sudo apt-get install -y --no-install-recommends libcamera-v4l2 libcamera-apps
+}
+
+# Returns the path to the v4l2-compat.so shim (empty if not installed).
+v4l2_compat_path() {
+  ls /usr/libexec/*/libcamera/v4l2-compat.so 2>/dev/null | head -1
+}
+
+# -----------------------------------------------------------------------------
 # raspicam library (built from source, only when the legacy stack exists)
 # -----------------------------------------------------------------------------
 build_raspicam() {
@@ -167,8 +186,17 @@ verify() {
     fi
   else
     log_info "  Camera backend: OpenCV V4L2 (libcamera)."
-    log_warn "  If rpicam-hello reports 'No cameras available!', check the"
-    log_warn "  CSI ribbon cable (connector labeled CAMERA on Pi 4)."
+    local compat
+    compat="$(v4l2_compat_path)"
+    if [[ -n "${compat}" ]]; then
+      log_info "  V4L2 compat layer: ${compat}"
+    else
+      log_warn "  V4L2 compat layer NOT found (libcamera-v4l2 missing?)."
+    fi
+    if command -v rpicam-hello >/dev/null 2>&1; then
+      log_warn "  If rpicam-hello reports 'No cameras available!', check the"
+      log_warn "  CSI ribbon cable (connector labeled CAMERA on Pi 4)."
+    fi
   fi
 }
 
@@ -176,9 +204,20 @@ verify() {
 # Main
 # -----------------------------------------------------------------------------
 install_system_packages
+install_libcamera_v4l2
 build_raspicam
 [[ "${SKIP_CAMERA_CONFIG}" -eq 0 ]] && enable_legacy_camera
 verify
 
 log_info "Done. Reboot with: sudo reboot"
 log_info "Then check the camera with: ./script_tools/check_camera.sh"
+
+if ! has_legacy_camera_stack; then
+  compat="$(v4l2_compat_path)"
+  if [[ -n "${compat}" ]]; then
+    log_info "On Bookworm+ run the program with the libcamera V4L2 compat layer:"
+    log_info "  sudo -E env LD_PRELOAD=${compat} ./bin/fish_cam_rpi"
+  else
+    log_warn "libcamera-v4l2 is not installed; check_camera.sh will show details."
+  fi
+fi
